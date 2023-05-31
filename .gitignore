@@ -1,0 +1,5 @@
+# Ignore UnityTechnologies folder
+UnityTechnologies/
+
+# Ignore .env file
+.env
