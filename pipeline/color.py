@@ -6,6 +6,7 @@ import urllib.request
 import matplotlib.pyplot as plt
 from PIL import Image, ImageDraw
 from matplotlib import gridspec
+from tqdm import tqdm
 
 def fetch_image(image_path):
   img = PIL.Image.open(image_path)
@@ -107,7 +108,7 @@ def generate_color_palette(prompt):
 
     image_list = [fetch_image(image) for image in image_list]
     colors_list = []
-    for image in image_list:
+    for image in tqdm(image_list):
         colors = extract_colors(image)
         colors_list.append(colors)
 
