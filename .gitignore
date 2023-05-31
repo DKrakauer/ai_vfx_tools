@@ -1,6 +1,6 @@
 # Ignore UnityTechnologies folder
 UnityTechnologies/
-"test unity level"/
+test unity level/
 
 # Ignore .env file
 .env
