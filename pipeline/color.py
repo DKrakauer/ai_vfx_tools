@@ -1,56 +1,51 @@
-import cv2
+import math
+import PIL
+import extcolors
 import numpy as np
-from sklearn.cluster import KMeans
+import urllib.request
 import matplotlib.pyplot as plt
+from PIL import Image, ImageDraw
+from matplotlib import gridspec
 
-def get_dominant_colors(image, n_colors):
-    # make sure image was loaded properly
-    if image is None:
-        print("Failed to load image.")
-    else:
-        print("Image loaded successfully.")
+def fetch_image(image_path):
+  img = PIL.Image.open(image_path)
+  return img
 
-    # Reshape the image to be a list of pixels
-    pixels = image.reshape(-1, 3)
+def extract_colors(img):
+  tolerance = 32
+  limit = 6
+  colors, pixel_count = extcolors.extract_from_image(img, tolerance, limit)
+  return colors
 
-    # Perform K-means clustering to find the most dominant colors
-    kmeans = KMeans(n_clusters=n_colors)
-    kmeans.fit(pixels)
+def render_color_platte(colors):
+  size = 100
+  columns = 6
+  width = int(min(len(colors), columns) * size)
+  height = int((math.floor(len(colors) / columns) + 1) * size)
+  result = Image.new("RGBA", (width, height), (0, 0, 0, 0))
+  canvas = ImageDraw.Draw(result)
+  for idx, color in enumerate(colors):
+      x = int((idx % columns) * size)
+      y = int(math.floor(idx / columns) * size)
+      canvas.rectangle([(x, y), (x + size - 1, y + size - 1)], fill=color[0])
+  return result
 
-    # Get the RGB values of the cluster centers
-    colors = kmeans.cluster_centers_
+def overlay_palette(img, color_palette):
+  nrow = 2
+  ncol = 1
+  f = plt.figure(figsize=(20,30), facecolor='None', edgecolor='k', dpi=55, num=None)
+  gs = gridspec.GridSpec(nrow, ncol, wspace=0.0, hspace=0.0) 
+  f.add_subplot(2, 1, 1)
+  plt.imshow(img, interpolation='nearest')
+  plt.axis('off')
+  f.add_subplot(1, 2, 2)
+  plt.imshow(color_palette, interpolation='nearest')
+  plt.axis('off')
+  plt.subplots_adjust(wspace=0, hspace=0, bottom=0)
+  plt.show(block=True)
 
-    # Convert each color to integer values
-    colors = colors.round(0).astype(int)
-
-def plot_colors(colors):
-    # Create a new image with each color
-    color_palette = np.zeros((50, 50 * len(colors), 3), dtype=np.uint8)
-
-    # For each color in the color palette
-    for i, color in enumerate(colors):
-        # Fill the corresponding section with the color
-        color_palette[:, i*50:(i+1)*50, :] = color
-
-    # Display the color palette
-    plt.figure(figsize=(len(colors), 1))
-    plt.imshow(color_palette)
-    plt.axis('off')
-    plt.show()
-
-# Read the image
-import os
-print(os.getcwd())
-image = cv2.imread('c:\\Users\shado\Desktop\Projects\\aivfx\pipeline\\test1.jpg')
-
-# Convert BGR image to RGB
-image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-
-# Get the dominant colors
-colors = get_dominant_colors(image, 5)  # Adjust the second parameter as needed
-
-# Plot the dominant colors
-plot_colors(colors)
-
-# def synthesize_color_palette(color_palettes):
-#     for each 
+def study_image(image_path):
+  img = fetch_image(image_path)
+  colors = extract_colors(img)
+  color_palette = render_color_platte(colors)
+  overlay_palette(img, color_palette)
