@@ -28,6 +28,7 @@ def generate_vfx(prompt):
     
 
     # Duplicate the Unity files
+    # TODO: implement copying files to ouput folder, keep bulk generation in mind
     duplicated_file_name = duplicate_unity_files(base_file_name)
 
     print("\nEnding early for testing purposes. ")
