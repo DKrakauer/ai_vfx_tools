@@ -10,26 +10,6 @@ def print_file_names(folder_path):
                 file_name_with_subfolder = os.path.join(folder_name, file_name)
                 # print(file_path + file_name_with_subfolder)
 
-# Usage example
-# folder_path = "assets"
-# print_file_names(folder_path)
-
-def get_subfolder_names(folder_path):
-    """
-    Get the subfolder names of a folder.
-
-    Args:
-        folder_path (str): The path of the folder.
-
-    Returns:
-        list: The subfolder names.
-    """
-    subfolder_names = []
-    for root, dirs, files in os.walk(folder_path):
-        for dir_name in dirs:
-            subfolder_names.append(dir_name)
-    return subfolder_names
-
 def generate_categories():
     """
     Generate the categories for the VFX.
@@ -37,7 +17,15 @@ def generate_categories():
     Returns:
         list: The categories.
     """
-    return get_subfolder_names("assets")
+    subfolder_names = []
+    folder_path = "assets"
+    if os.path.isdir(folder_path):
+        for item in os.listdir(folder_path):
+            item_path = os.path.join(folder_path, item)
+            if os.path.isdir(item_path):
+                subfolder_names.append(item)
+    
+    return subfolder_names
 
 def get_prefab_paths(categories):
     """
@@ -58,7 +46,7 @@ def get_prefab_paths(categories):
         if os.path.exists(category_path):
             for file_name in os.listdir(category_path):
                 if file_name.endswith(".prefab"):
-                    prefab_path = os.path.join(category_path, file_name)
+                    prefab_path = os.path.join("Prefabs", file_name)
                     prefab_list.append(prefab_path)
         
         prefab_paths.append(prefab_list)

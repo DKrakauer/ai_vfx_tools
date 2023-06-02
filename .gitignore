@@ -4,3 +4,8 @@ test unity level/
 
 # Ignore .env file
 .env
+
+# Ignore editor caches and stuff
+__pycache__/
+.DS_Store
+__pycache__/color.cpython-39.pyc
