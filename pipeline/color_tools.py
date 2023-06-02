@@ -7,6 +7,9 @@ import matplotlib.pyplot as plt
 from PIL import Image, ImageDraw
 from matplotlib import gridspec
 from tqdm import tqdm
+from art_api import go_make_art_with_this
+import random
+import threading
 
 def fetch_image(image_path):
   img = PIL.Image.open(image_path)
@@ -91,19 +94,32 @@ def get_brightest_colors(color_list):
     
     return brightest_colors
 
-
 def get_images_from_stability(prompt):
     print("Requesting Images from stabiliy api...")
     #TODO: get images from stability api using prompt
     #save them in /images/$prompt1-4.png
+    full_prompt = f"({prompt}), video game texture, vibrant color, solid color"
+    #DPM 2M Karras, 30 steps, tiling, 512x512, batch size 4
 
     #return list of image paths
     print("Recieved, saving images...")
-    return ["test2.jpg", "test3.jpg", "test4.jpg", "test5.jpg"]
+    return ["test2.png", "test3.png", "test4.png", "test5.png"]
 
-def generate_color_palette(prompt):
+def get_images_from_stability(prompt, current_iteration):
+    text = f"({prompt}), video game texture, vibrant color, solid color"
     
-    image_list = get_images_from_stability(prompt)
+    # Create and start the threads
+    t1 = go_make_art_with_this(text, f"images/midpoint{current_iteration}_1.png")
+    t2 = go_make_art_with_this(text, f"images/midpoint{current_iteration}_2.png")
+    t3 = go_make_art_with_this(text, f"images/midpoint{current_iteration}_3.png")
+    t4 = go_make_art_with_this(text, f"images/midpoint{current_iteration}_4.png")
+    images = [t1, t2, t3, t4]
+    print("Done!")
+    return images
+
+def generate_color_palette(prompt, current_iteration):
+    print("Getting Images...")
+    image_list = get_images_from_stability(prompt, current_iteration)
     print("Analyzing Images...")
 
     image_list = [fetch_image(image) for image in image_list]
@@ -113,6 +129,17 @@ def generate_color_palette(prompt):
         colors_list.append(colors)
 
     equalized_colors = simplify_color_palette(colors_list)
-    final_colors = get_brightest_colors(equalized_colors)
+    # final_colors = get_brightest_colors(equalized_colors)
+    final_colors = equalized_colors
     print("Final Colors: " + str(final_colors[0]) + " and " + str(final_colors[1]) + ".")
     return final_colors
+
+def calculate_alpha(count, low, high):
+    result = count / 262144 + random.uniform(low, high)
+    return min(result, 1.0)
+
+def get_rgba(color, low, high):
+    rgb, alpha = color
+    r, b, g = rgb
+    alpha = calculate_alpha(alpha, low, high)
+    return (r, b, g, alpha)

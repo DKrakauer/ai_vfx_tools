@@ -1,118 +1,71 @@
 import os
-import openai
-from dotenv import load_dotenv
+import random
+from color_tools import get_rgba
 
-def get_vfx_category(prompt, categories):
-    print("Getting VFX category for prompt: " + prompt)
-
-    load_dotenv()
-    openai.api_key = os.getenv("OPENAI_API_KEY")
-
-    prompt_string = "I am trying to create some visual effects for " + prompt + ". I have access to a bunch of starter/basic effects which I want to use to save me some time. I plan on changing the color, so all that matters is the shape of the effect. The categories of effects include: " + str(categories) + ". Which category fits what I am looking for best? Please only respond with the exact category name provided."
-
-    response = openai.Completion.create(
-        model="text-davinci-003",
-        prompt=prompt_string,
-        temperature=1,
-        max_tokens=256,
-        top_p=1,
-        frequency_penalty=0,
-        presence_penalty=0
-    )
-
-    text_response = response['choices'][0]['text'].strip()
-
-    if text_response in categories:
-        return text_response
-    else:
-        print(f"Critical Error! GPT Response gave an invalid category:  \n{prompt_string}\n{response}\n")
-        return None
-
-def prune_strings(string_list):
-    pruned_list = []
-    for string in string_list:
-        pruned_string = string.replace("Prefabs/", "").replace(".prefab", "")
-        pruned_list.append(pruned_string)
-    return pruned_list
-
-def choose_vfx_effect(effect_names, prompt, category):
-    print("Choosing VFX effect for prompt: " + prompt)
-
-    load_dotenv()
-    openai.api_key = os.getenv("OPENAI_API_KEY")
-
-    actual_effect_names = prune_strings(effect_names)
-    prompt_string = "I am trying to create some visual effects for " + prompt + ". I have access to a bunch of " + category + " effects which I want to use to save me some time. I plan on changing the color, so all that matters is the shape of the effect. The only effects I have access to are: " + str(actual_effect_names) + ". Which effect fits what I am looking for best? Please only respond with the exact name of the effect."
-    
-    response = openai.Completion.create(
-        model="text-davinci-003",
-        prompt=prompt_string,
-        temperature=1,
-        max_tokens=256,
-        top_p=1,
-        frequency_penalty=0,
-        presence_penalty=0
-    )
-
-    text_response = response['choices'][0]['text'].strip()
-
-    if text_response in actual_effect_names:
-        index = actual_effect_names.index(text_response)
-        return effect_names[index]
-    else:
-        print(f"Critical Error! GPT Response gave an invalid effect!: \n{prompt_string}\n{response}\n")
-        return None
-
-def get_vfx_file_name(category_index, category, prompt, base_effect_names):
-    print("Figuring out base file name for category: " + category)
-    base_path = "assets"
-    category_path = f"{base_path}/{category}"
-    
-    effect_name = choose_vfx_effect(base_effect_names[category_index], prompt, category)
-    
-    if effect_name == None:
-        return None
-    
-    file_path = f"{category_path}/{effect_name}"
-    return file_path
-
-def find_index(string_list, target_string):
-    try:
-        index = string_list.index(target_string)
-        return index
-    except ValueError:
-        return -1  # Return -1 if the target string is not found in the list
-
-
-
-def generate_base_unity_file_name(prompt, categories, base_effect_names):
-    """
-    Generate the base file name for Unity files.
-
-    Returns:
-        str: The base file name.
-    """
-    category = get_vfx_category(prompt, categories)
-
-    category_index = find_index(categories, category)
-
-    file_path = get_vfx_file_name(category_index, category, prompt, base_effect_names)
-
-    return file_path
-
-def duplicate_unity_files(base_file_name):
+def duplicate_unity_files(prompt, base_file_name):
     """
     Duplicate the Unity files.
 
     Args:
+        prompt (str): The prompt for VFX.
         base_file_name (str): The base file name for the Unity files.
 
     Returns:
         str: The duplicated file name.
     """
-    # TODO: Implement Unity file duplication logic
-    duplicated_file_name = base_file_name + '_duplicate'  # Example duplicated file name
-    return duplicated_file_name
+    # Preprocess the name
+    name = prompt.replace(" ", "").replace(",", "")
+
+    # Get the extension from file_path
+    _, extension = os.path.splitext(base_file_name)
+
+    # Generate the new file name
+    new_file_name = ""
+    if extension != ".mat.meta":
+        new_file_name = f"{name}{extension}"
+    else:
+        new_file_name = f"{name}.mat"
+
+    # Generate the new file path
+    output_path = os.path.join("output", new_file_name)
+
+    # Duplicate the file
+    with open(base_file_name, "rb") as original_file:
+        with open(output_path, "wb") as duplicate_file:
+            duplicate_file.write(original_file.read())
+
+    print("Created new output file: " + output_path)
+    return output_path
+
+def update_colors(file_path, main_color, second_color):
+    count = 0
+    total = 0
+    with open(file_path, 'r+') as file:
+        lines = file.readlines()
+        total = len(lines)
+        for i in range(total):
+            if lines[i].strip() == 'startColor:':
+                # Find the maxColor line
+                for j in range(i+1, i+5):
+                    if 'maxColor' in lines[j]:
+                        # Generate random color choice
+                        if random.random() < 0.7:
+                            color_choice = main_color
+                        else:
+                            color_choice = second_color
+                        
+                        # Update the maxColor line
+                        updated_line = f"      maxColor: {{r: {color_choice[0]}, g: {color_choice[1]}, b: {color_choice[2]}, a: {color_choice[3]}}}\n"
+                        lines[j] = updated_line
+                        count += 1
+                        # print("Max color line:\n " + lines[j])
+                        # print("Updated max color line:\n " + updated_line)
+                        break
+        
+        file.seek(0)
+        file.writelines(lines)
+        file.truncate()
+    return count, total
 
 def tweak_files(color_palette, duplicated_file_name):
     """
@@ -122,6 +75,9 @@ def tweak_files(color_palette, duplicated_file_name):
         color_palette (ColorPalette): The color palette for VFX.
         duplicated_file_name (str): The duplicated file name.
     """
-    # TODO: Implement file tweaking logic
-    print("Tweaking files with color palette:", color_palette.colors)
-    print("Using duplicated file:", duplicated_file_name)
+    print("Reworking new effect files... ")
+    primary_color = get_rgba(color_palette[0], 0.8, 0.9)
+    secondary_color = get_rgba(color_palette[1], 0.7, 0.8)
+    count, total = update_colors(duplicated_file_name, primary_color, secondary_color)
+    print("Changed " + str(count) + " out of " + str(total) + " colors.\n")
+    return duplicated_file_name

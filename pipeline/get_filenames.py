@@ -53,6 +53,32 @@ def get_prefab_paths(categories):
     
     return prefab_paths
 
+def get_meta_material_paths(categories):
+    """
+    Get the prefab paths for the categories.
+
+    Args:
+        categories (list): The categories.
+
+    Returns:
+        list: The prefab paths.
+    """
+    prefab_paths = []
+    
+    for category in categories:
+        category_path = os.path.join("assets", category, "Materials")
+        prefab_list = []
+        
+        if os.path.exists(category_path):
+            for file_name in os.listdir(category_path):
+                if file_name.endswith(".mat.meta"):
+                    prefab_path = os.path.join(category_path, file_name)
+                    prefab_list.append(prefab_path)
+        
+        prefab_paths.append(prefab_list)
+    
+    return prefab_paths
+
 
 
 
