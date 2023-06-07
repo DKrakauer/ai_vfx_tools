@@ -106,7 +106,7 @@ def get_images_from_stability(prompt):
     return ["test2.png", "test3.png", "test4.png", "test5.png"]
 
 def get_images_from_stability(prompt, current_iteration):
-    text = f"({prompt}), video game texture, vibrant color, solid color"
+    text = f"({prompt}), video game texture, vibrant colors, solid color"
     
     # Create and start the threads
     t1 = go_make_art_with_this(text, f"images/midpoint{current_iteration}_1.png")
@@ -140,6 +140,9 @@ def calculate_alpha(count, low, high):
 
 def get_rgba(color, low, high):
     rgb, alpha = color
-    r, b, g = rgb
+    r, g, b = rgb
+    r=r/255
+    g=g/255
+    b=b/255
     alpha = calculate_alpha(alpha, low, high)
-    return (r, b, g, alpha)
+    return (r, g, b, alpha)
